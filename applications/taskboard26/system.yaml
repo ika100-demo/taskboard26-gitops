@@ -54,5 +54,6 @@ components:
     instances:
       dev: {}
       staging: {}
+      prod: {}
     expose:
       host: taskboard26-api
