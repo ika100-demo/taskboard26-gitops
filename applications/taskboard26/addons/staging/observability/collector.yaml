@@ -19,7 +19,7 @@ spec:
         app.kubernetes.io/managed-by: gitops-app
         app: otel-collector
       annotations:
-        checksum/config: 30025685e82d91ea
+        checksum/config: 32f1110003ce4d7c
         checksum/tailer: 5f38d30e83bc511a
     spec:
       serviceAccountName: otel-collector
