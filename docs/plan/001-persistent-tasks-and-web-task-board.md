@@ -3,64 +3,112 @@ plan_id: 001-persistent-tasks-and-web-task-board
 spec: 001-persistent-tasks-and-web-task-board
 feature: Tasks kept in Postgres by the Task API, and a web task board that lists and creates them
 gitops_app: ika100-demo/taskboard26-gitops
-status: draft
+status: completed
 repos:
-  - id: taskboard26-gitops
-    shape: gitops-app
-    summary: Postgres database for the Task API and the Task API URL for the board
-    acs: [AC-001.1, AC-001.4]
-    order: before-merge
-    gitops:
-      - {resource: postgres, type: database}
-      - {uses: postgres, component: taskboard26-api}
-      - {env: {TASK_API_URL: 'http://taskboard26-api'}, component: taskboard26-web}
-    depends_on: []
-    done: false
-  - id: taskboard26-api
-    shape: service-python
-    summary: Persistent tasks in Postgres
-    acs: [AC-001.1, AC-001.2, AC-001.3, AC-001.6]
-    criteria:
-      - "Given tasks were created through `POST /tasks` and the database at `DATABASE_URL` keeps running, when the Task API process is restarted or replaced by a new version, then `GET /tasks` returns `200` with the same tasks, each with the same `id`, `title`, `due_date` and `created_at`, oldest first (system AC-001.1) (replaces AC-001.8)"
-      - "Given an empty database at `DATABASE_URL`, when the Task API starts, then it creates its table itself and `GET /tasks` returns `200` with `[]`; given the table already holds tasks, when the Task API starts, then it keeps every stored task unchanged (system AC-001.1)"
-      - "Given the database at `DATABASE_URL` is unreachable, when a client sends `GET /tasks` or a valid `POST /tasks`, then the response is `503` with `detail` `\"storage unavailable\"` within 5 seconds, no task is created, `GET /ready` answers `503` and `GET /health` keeps answering `200` (system AC-001.2)"
-      - "Given the database is unreachable when the Task API starts, when it starts, then the process keeps running, `GET /health` answers `200` and `GET /ready` answers `503` (system AC-001.2)"
-      - "Given the database was unreachable and becomes reachable again, when 60 seconds have passed, then without a restart `GET /ready` answers `200`, `GET /tasks` returns `200` with every task stored before the outage and a valid `POST /tasks` returns `201` (system AC-001.3)"
-      - "Given 10,000 tasks are stored in the database, when a client sends a further valid `POST /tasks`, then the response is `409` with `detail` `\"task limit reached\"` and `GET /tasks` still lists 10,000 tasks, also after a restart (system AC-001.6)"
-      - "Given the contract's rules for `POST /tasks`, when a client sends a title that is missing, empty or only whitespace after trimming, or longer than 200 characters after trimming, then the response is `422` with `detail` a list whose entry has `loc` ending in `title`, and no task is stored (system AC-001.6)"
-    arguments: |
-      Storage switches from the in-memory store to the Postgres database the gitops entry wires in (`DATABASE_URL`, `PG*`
-      from the CloudNativePG Secret). The existing endpoints, fields, validation, 422/409 answers and the 10,000-task limit
-      of API spec 001 stay as they are (system A1); API spec 001's A10 no longer holds (system A2). No carry-over of
-      in-memory tasks (system A3). Keep `created_at` at microsecond precision and order by it with an insertion sequence
-      as tie-breaker. Liveness never touches the database; readiness pings it with the timeouts of the contract.
-    depends_on: []
-    done: false
-  - id: taskboard26-web
-    shape: web-nextjs
-    summary: Task board on the start page that lists and creates tasks
-    acs: [AC-001.4, AC-001.5, AC-001.6, AC-001.7]
-    criteria:
-      - "Given the Task API at `TASK_API_URL` returns tasks A, B and C from `GET /tasks`, when a person opens `/`, then the page shows exactly these three tasks in that order (oldest first), each with its title and its `due_date` as `YYYY-MM-DD` or the text \"No due date\"; given it returns `[]`, the page shows \"No tasks yet\" (system AC-001.4)"
-      - "Given the board is open, when a person enters the title \"Buy milk\" and optionally the due date 2026-12-24 and clicks \"Add task\", then the board sends `POST /tasks` to the Task API and on `201` shows the returned task at the end of the list without a full page reload, and the \"Title\" and \"Due date\" fields are emptied (system AC-001.5)"
-      - "Given the board is open, when a person submits a title that is empty or only whitespace, then the board shows \"Enter a title\" next to the form, keeps the entered values and sends no request to the Task API; when the title is longer than 200 characters after trimming, it shows \"Title must be at most 200 characters\" in the same way (system AC-001.6)"
-      - "Given the board is open, when a person submits a valid task and the Task API answers `409`, then the board shows \"Task limit reached\" next to the form, keeps the entered values and lists no new task (system AC-001.6)"
-      - "Given the Task API is unreachable, does not answer within 5 seconds or answers `5xx` (including `503` \"storage unavailable\") or a status the contract does not list, when a person opens `/`, then the page loads with `200` and shows \"Tasks could not be loaded. Try again later.\" in place of the list (system AC-001.7)"
-      - "Given the Task API is unreachable, does not answer within 5 seconds, answers `5xx`, a `422` or a status the contract does not list, when a person submits the form, then the board shows \"Task could not be saved. Try again.\", keeps the entered values and lists no new task (system AC-001.7)"
-      - "Given the Task API is unreachable, when the platform probes the board, then `/api/health` and `/api/ready` keep answering `200`, so the board stays served (system AC-001.7)"
-    arguments: |
-      The start page `/` is the board (system A6): the list, then a form with "Title" (required), "Due date" (optional,
-      a date input sending `YYYY-MM-DD`) and an "Add task" button. The Task API is called only from the Next.js server
-      (Server Component for the list, a Server Action or route handler for the create) at `TASK_API_URL`, which is an
-      in-cluster URL the browser cannot reach; never expose it as `NEXT_PUBLIC_*`. Add `TASK_API_URL` to
-      `docs/env-vars.md` (local default `http://localhost:8080`). Dev only (system A10); no sign-in (system A9).
-    depends_on: []
-    done: false
+- id: taskboard26-gitops
+  shape: gitops-app
+  summary: Postgres database for the Task API and the Task API URL for the board
+  acs:
+  - AC-001.1
+  - AC-001.4
+  order: before-merge
+  gitops:
+  - resource: postgres
+    type: database
+  - uses: postgres
+    component: taskboard26-api
+  - env:
+      TASK_API_URL: http://taskboard26-api
+    component: taskboard26-web
+  depends_on: []
+  done: true
+- id: taskboard26-api
+  shape: service-python
+  summary: Persistent tasks in Postgres
+  acs:
+  - AC-001.1
+  - AC-001.2
+  - AC-001.3
+  - AC-001.6
+  criteria:
+  - Given tasks were created through `POST /tasks` and the database at `DATABASE_URL` keeps running, when
+    the Task API process is restarted or replaced by a new version, then `GET /tasks` returns `200` with
+    the same tasks, each with the same `id`, `title`, `due_date` and `created_at`, oldest first (system
+    AC-001.1) (replaces AC-001.8)
+  - Given an empty database at `DATABASE_URL`, when the Task API starts, then it creates its table itself
+    and `GET /tasks` returns `200` with `[]`; given the table already holds tasks, when the Task API starts,
+    then it keeps every stored task unchanged (system AC-001.1)
+  - Given the database at `DATABASE_URL` is unreachable, when a client sends `GET /tasks` or a valid `POST
+    /tasks`, then the response is `503` with `detail` `"storage unavailable"` within 5 seconds, no task
+    is created, `GET /ready` answers `503` and `GET /health` keeps answering `200` (system AC-001.2)
+  - Given the database is unreachable when the Task API starts, when it starts, then the process keeps
+    running, `GET /health` answers `200` and `GET /ready` answers `503` (system AC-001.2)
+  - Given the database was unreachable and becomes reachable again, when 60 seconds have passed, then
+    without a restart `GET /ready` answers `200`, `GET /tasks` returns `200` with every task stored before
+    the outage and a valid `POST /tasks` returns `201` (system AC-001.3)
+  - Given 10,000 tasks are stored in the database, when a client sends a further valid `POST /tasks`,
+    then the response is `409` with `detail` `"task limit reached"` and `GET /tasks` still lists 10,000
+    tasks, also after a restart (system AC-001.6)
+  - Given the contract's rules for `POST /tasks`, when a client sends a title that is missing, empty or
+    only whitespace after trimming, or longer than 200 characters after trimming, then the response is
+    `422` with `detail` a list whose entry has `loc` ending in `title`, and no task is stored (system
+    AC-001.6)
+  arguments: |
+    Storage switches from the in-memory store to the Postgres database the gitops entry wires in (`DATABASE_URL`, `PG*`
+    from the CloudNativePG Secret). The existing endpoints, fields, validation, 422/409 answers and the 10,000-task limit
+    of API spec 001 stay as they are (system A1); API spec 001's A10 no longer holds (system A2). No carry-over of
+    in-memory tasks (system A3). Keep `created_at` at microsecond precision and order by it with an insertion sequence
+    as tie-breaker. Liveness never touches the database; readiness pings it with the timeouts of the contract.
+  depends_on: []
+  done: true
+- id: taskboard26-web
+  shape: web-nextjs
+  summary: Task board on the start page that lists and creates tasks
+  acs:
+  - AC-001.4
+  - AC-001.5
+  - AC-001.6
+  - AC-001.7
+  criteria:
+  - Given the Task API at `TASK_API_URL` returns tasks A, B and C from `GET /tasks`, when a person opens
+    `/`, then the page shows exactly these three tasks in that order (oldest first), each with its title
+    and its `due_date` as `YYYY-MM-DD` or the text "No due date"; given it returns `[]`, the page shows
+    "No tasks yet" (system AC-001.4)
+  - Given the board is open, when a person enters the title "Buy milk" and optionally the due date 2026-12-24
+    and clicks "Add task", then the board sends `POST /tasks` to the Task API and on `201` shows the returned
+    task at the end of the list without a full page reload, and the "Title" and "Due date" fields are
+    emptied (system AC-001.5)
+  - Given the board is open, when a person submits a title that is empty or only whitespace, then the
+    board shows "Enter a title" next to the form, keeps the entered values and sends no request to the
+    Task API; when the title is longer than 200 characters after trimming, it shows "Title must be at
+    most 200 characters" in the same way (system AC-001.6)
+  - Given the board is open, when a person submits a valid task and the Task API answers `409`, then the
+    board shows "Task limit reached" next to the form, keeps the entered values and lists no new task
+    (system AC-001.6)
+  - Given the Task API is unreachable, does not answer within 5 seconds or answers `5xx` (including `503`
+    "storage unavailable") or a status the contract does not list, when a person opens `/`, then the page
+    loads with `200` and shows "Tasks could not be loaded. Try again later." in place of the list (system
+    AC-001.7)
+  - Given the Task API is unreachable, does not answer within 5 seconds, answers `5xx`, a `422` or a status
+    the contract does not list, when a person submits the form, then the board shows "Task could not be
+    saved. Try again.", keeps the entered values and lists no new task (system AC-001.7)
+  - Given the Task API is unreachable, when the platform probes the board, then `/api/health` and `/api/ready`
+    keep answering `200`, so the board stays served (system AC-001.7)
+  arguments: |
+    The start page `/` is the board (system A6): the list, then a form with "Title" (required), "Due date" (optional,
+    a date input sending `YYYY-MM-DD`) and an "Add task" button. The Task API is called only from the Next.js server
+    (Server Component for the list, a Server Action or route handler for the create) at `TASK_API_URL`, which is an
+    in-cluster URL the browser cannot reach; never expose it as `NEXT_PUBLIC_*`. Add `TASK_API_URL` to
+    `docs/env-vars.md` (local default `http://localhost:8080`). Dev only (system A10); no sign-in (system A9).
+  depends_on: []
+  done: true
 gitops_pin:
-  - service: taskboard26-api
-    overlay: staging
-    apply_after: taskboard26-api
-    note: persistence holds wherever the Task API runs (system A4, A10); staging gets the database from the gitops entry and the persistent API through the usual after-dev-smoke promotion once the API's PR merged and dev smoke is green. The board stays in dev, so taskboard26-web gets no staging pin.
+- service: taskboard26-api
+  overlay: staging
+  apply_after: taskboard26-api
+  note: persistence holds wherever the Task API runs (system A4, A10); staging gets the database from
+    the gitops entry and the persistent API through the usual after-dev-smoke promotion once the API's
+    PR merged and dev smoke is green. The board stays in dev, so taskboard26-web gets no staging pin.
 ---
 
 ## taskboard26-gitops — Postgres database for the Task API and the Task API URL for the board
