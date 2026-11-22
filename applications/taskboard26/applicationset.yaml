@@ -117,6 +117,35 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
+  name: taskboard26-addons-config-dev
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - name: observability
+  template:
+    metadata:
+      name: addon-{{name}}-dev
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/ika100-demo/taskboard26-gitops
+        targetRevision: main
+        path: applications/taskboard26/addons/dev/{{name}}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: taskboard26-dev
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
   name: taskboard26-addons-staging
   namespace: argocd
 spec:
