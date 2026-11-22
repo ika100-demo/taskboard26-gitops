@@ -150,7 +150,7 @@ Rules no tool checks:
 - Both length rules apply to the title **after trimming** leading and trailing whitespace: a title of only whitespace counts as empty. The board checks them before sending and shows "Enter a title" for `title-required` / `title-min` and "Title must be at most 200 characters" for `title-max`; the API enforces them again with `422`.
 - `due_date` must be a calendar date in `YYYY-MM-DD` form or `null`/absent; anything else is `422` naming `due_date`. The board uses a date input, so it only ever sends a valid date or omits the field.
 - At most 10,000 tasks are stored; a further valid create is `409` `"task limit reached"`. The board does not count tasks itself, it maps the `409`.
-- The board shows its own fixed English messages, never the API's `detail` text (system A8).
+- The board shows its own fixed English messages, except that a `422` whose `detail` names `title` shows that entry's `msg` next to "Title" (system A8, revised 2026-11-22).
 
 ### Errors
 
@@ -166,7 +166,7 @@ errors:
     message: "Task could not be saved. Try again."
 ```
 
-A validation error is `422` with `detail` a list; each entry's `loc` is a list whose last element is the field name (`title` or `due_date`), `type` the rule that failed and `msg` a text for logs only. Other answers carry `detail` as one string: `409` `"task limit reached"`, `503` `"storage unavailable"`.
+A validation error is `422` with `detail` a list; each entry's `loc` is a list whose last element is the field name (`title` or `due_date`), `type` the rule that failed and `msg` a text the board shows at the field for `title` (system A8, revised). Other answers carry `detail` as one string: `409` `"task limit reached"`, `503` `"storage unavailable"`.
 
 How the board treats answers:
 
@@ -176,7 +176,8 @@ How the board treats answers:
 | `GET /tasks` | `503`, any other `5xx`, any status not listed above, a body that is not a task array, connection error, timeout | "Tasks could not be loaded. Try again later." in place of the list; the page itself answers `200` |
 | `POST /tasks` | `201` | the returned task appended at the end of the list, form emptied |
 | `POST /tasks` | `409` | "Task limit reached" next to the form, values kept |
-| `POST /tasks` | `422` (its own checks passed, so the API disagrees), `503`, any other `5xx`, any status not listed above, connection error, timeout | "Task could not be saved. Try again." next to the form, values kept, no task added to the list |
+| `POST /tasks` | `422` naming `title` (its own checks passed, so the API disagrees) | that entry's `msg` next to "Title", values kept, no task added to the list |
+| `POST /tasks` | `422` naming only other fields, `503`, any other `5xx`, any status not listed above, connection error, timeout | "Task could not be saved. Try again." next to the form, values kept, no task added to the list |
 
 ### Timeouts
 
