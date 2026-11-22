@@ -1,7 +1,7 @@
 ---
 spec_id: 001-persistent-tasks-and-web-task-board
 title: Persistent tasks and web task board
-status: approved
+status: draft
 priority: P1
 shape: gitops-app
 ---
@@ -52,7 +52,8 @@ As a taskboard user, I want to create a task with a title and an optional due da
 - **A5** When the database is unreachable the API answers `503` `"storage unavailable"` and reports not ready, but stays alive so it is not restarted in a loop; it recovers by itself within 60 seconds (other option: fail liveness and let it be restarted; affects AC-001.2, AC-001.3).
 - **A6** The board is the start page `/` of the web UI: a list above or beside a form with the fields "Title" (required) and "Due date" (optional date), and an "Add task" button (other option: a separate page for creating; affects AC-001.4, AC-001.5).
 - **A7** The board lists tasks oldest first like `GET /tasks`, and shows the due date in the API's `YYYY-MM-DD` form (other option: newest first, or a localized date; affects AC-001.4, AC-001.5).
-- **A8** The board checks the title before sending (trimmed, 1 to 200 characters) and shows the API's rejections with its own fixed English messages (other option: show the API's `detail` text verbatim; affects AC-001.6, AC-001.7).
+- ~~**A8** The board checks the title before sending (trimmed, 1 to 200 characters) and shows the API's rejections with its own fixed English messages (other option: show the API's `detail` text verbatim; affects AC-001.6, AC-001.7).~~
+- **A8** (revised 2026-11-22, user decision on the web escalation) The board checks the title before sending (trimmed, 1 to 200 characters) and shows "Enter a title" / "Title must be at most 200 characters" for what its own check catches; a `422` from the Task API that names the `title` field shows the API's `msg` next to "Title", values kept and no task added; every other rejection keeps the board's fixed English messages (other option: fixed messages only, which the platform contract check does not accept; affects AC-001.6, AC-001.7).
 - **A9** As decided for the API spec 001 (no authentication for now), the board needs no sign-in: anyone who can reach the web UI in dev may see and create tasks (other option: protect the board before it ships; affects AC-001.4, AC-001.5).
 - **A10** The board stays in dev only and the persistence applies wherever the Task API runs (dev and staging); no `environments:` limit is set for this spec (other option: promote the board to staging too; affects AC-001.4–AC-001.7).
 
@@ -65,3 +66,4 @@ As a taskboard user, I want to create a task with a title and an optional due da
 - 2026-11-22 created
 - 2026-11-22 priority P1 proposed: P1: normal bug or feature
 - 2026-11-22 approved
+- 2026-11-22 draft: amend: A8 — a 422 the board did not catch shows the API msg at Title (user decision on the web escalation)
