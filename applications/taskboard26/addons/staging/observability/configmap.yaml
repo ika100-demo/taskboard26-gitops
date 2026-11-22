@@ -12,6 +12,8 @@ data:
     \        endpoint: 0.0.0.0:4318\n  prometheus:\n    config:\n      scrape_configs:\n\
     \      - job_name: taskboard26-api\n        scrape_interval: 30s\n        metrics_path:\
     \ /metrics\n        static_configs:\n        - targets:\n          - taskboard26-api.taskboard26-staging.svc:80\n\
+    \      - job_name: taskboard26-web\n        scrape_interval: 30s\n        metrics_path:\
+    \ /api/metrics\n        static_configs:\n        - targets:\n          - taskboard26-web.taskboard26-staging.svc:80\n\
     processors:\n  memory_limiter:\n    check_interval: 1s\n    limit_percentage:\
     \ 80\n    spike_limit_percentage: 25\n  batch: {}\n  resource:\n    attributes:\n\
     \    - key: deployment.environment\n      value: staging\n      action: upsert\n\

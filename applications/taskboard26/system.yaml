@@ -91,6 +91,7 @@ components:
         memory: 512Mi
     instances:
       dev: {}
+      staging: {}
     expose:
       host: taskboard26-web
 resources:
