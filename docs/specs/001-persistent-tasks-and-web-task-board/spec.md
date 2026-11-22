@@ -1,7 +1,7 @@
 ---
 spec_id: 001-persistent-tasks-and-web-task-board
 title: Persistent tasks and web task board
-status: draft
+status: approved
 priority: P1
 shape: gitops-app
 ---
@@ -67,3 +67,4 @@ As a taskboard user, I want to create a task with a title and an optional due da
 - 2026-11-22 priority P1 proposed: P1: normal bug or feature
 - 2026-11-22 approved
 - 2026-11-22 draft: amend: A8 — a 422 the board did not catch shows the API msg at Title (user decision on the web escalation)
+- 2026-11-22 approved
